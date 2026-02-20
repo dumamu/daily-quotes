@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reaction Time Game</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; }
+    h1 { margin-bottom: 6px; }
+    p { color: #444; margin-top: 0; }
+    .panel { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    .stage {
+      height: 260px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      user-select: none;
+      border: 1px solid #ccc;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+    button { padding: 10px 14px; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; }
+    .stat { padding: 10px 12px; border: 1px solid #eee; border-radius: 10px; background: #fafafa; }
+    .small { font-size: 0.95rem; color: #555; }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <h1>Reaction Time Game</h1>
+  <p>Click to start. Wait for green. Click as fast as you can. Don’t click early 🙂</p>
+
+  <div class="panel">
+    <div id="stage" class="stage">Click here to start</div>
+
+    <div class="row">
+      <button id="reset">Reset</button>
+      <div class="stat">Last: <span id="last">—</span></div>
+      <div class="stat">Best: <span id="best">—</span></div>
+      <div class="stat">Average (5): <span id="avg">—</span></div>
+    </div>
+
+    <p class="small">
+      Tip: After you publish, your game will be at:
+      <code>https://dumamu.github.io/daily-quotes/game.html</code>
+    </p>
+  </div>
+
+  <div class="panel">
+    <a href="index.html">← Back to Quotes</a>
+  </div>
+
+  <script>
+    const stage = document.getElementById("stage");
+    const lastEl = document.getElementById("last");
+    const bestEl = document.getElementById("best");
+    const avgEl  = document.getElementById("avg");
+    const resetBtn = document.getElementById("reset");
+
+    // States: idle -> waiting -> ready -> tooSoon
+    let state = "idle";
+    let startTime = 0;
+    let timeoutId = null;
+
+    const scores = []; // store last 5 reaction times
+    let best = null;
+
+    function setStage(text, bg) {
+      stage.textContent = text;
+      stage.style.background = bg;
+    }
+
+    function clearTimer() {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    }
+
+    function ms(n) {
+      return `${n} ms`;
+    }
+
+    function updateStats(last = null) {
+      if (last !== null) {
+        lastEl.textContent = ms(last);
+        scores.push(last);
+        while (scores.length > 5) scores.shift();
+
+        if (best === null || last < best) best = last;
+        bestEl.textContent = ms(best);
+
+        const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+        avgEl.textContent = ms(avg);
+      } else {
+        lastEl.textContent = "—";
+        bestEl.textContent = best === null ? "—" : ms(best);
+        avgEl.textContent  = scores.length ? ms(Math.round(scores.reduce((a,b)=>a+b,0)/scores.length)) : "—";
+      }
+    }
+
+    function startRound() {
+      clearTimer();
+      state = "waiting";
+      setStage("Wait for green…", "#f3f3f3");
+
+      // Random delay between 1.5s and 4s
+      const delay = 1500 + Math.floor(Math.random() * 2500);
+      timeoutId = setTimeout(() => {
+        state = "ready";
+        startTime = performance.now();
+        setStage("GO! Click!", "#b9f6c5");
+      }, delay);
+    }
+
+    function resetAll() {
+      clearTimer();
+      state = "idle";
+      setStage("Click here to start", "#f3f3f3");
+      scores.length = 0;
+      best = null;
+      updateStats(null);
+    }
+
+    stage.addEventListener("click", () => {
+      if (state === "idle") {
+        startRound();
+        return;
+      }
+      if (state === "waiting") {
+        // clicked too soon
+        clearTimer();
+        state = "idle";
+        setStage("Too soon! Click to try again", "#ffcccc");
+        return;
+      }
+      if (state === "ready") {
+        const rt = Math.max(0, Math.round(performance.now() - startTime));
+        state = "idle";
+        setStage("Nice! Click to play again", "#d9e8ff");
+        updateStats(rt);
+        return;
+      }
+    });
+
+    resetBtn.addEventListener("click", resetAll);
+
+    // init
+    resetAll();
+  </script>
+</body>
+</html>
