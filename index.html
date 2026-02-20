@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Daily Quotes</title>
+    <style>
+      body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; }
+      h1 { margin-bottom: 8px; }
+      p { color: #444; margin-top: 0; }
+      ul { line-height: 1.6; }
+      .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; }
+      button { padding: 10px 14px; border-radius: 8px; border: 1px solid #ccc; cursor: pointer; }
+      #random { font-size: 1.1rem; margin: 12px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Daily Quotes</h1>
+    <p>A tiny site hosted free on GitHub Pages.</p>
+
+    <div class="card">
+      <button id="btn">Show random quote</button>
+      <div id="random">Click the button 🙂</div>
+    </div>
+
+    <h2>All Quotes</h2>
+    <ul id="list"></ul>
+
+    <script>
+      async function loadQuotes() {
+        // reads your quotes.txt from the repo
+        const res = await fetch("quotes.txt");
+        const text = await res.text();
+        const quotes = text
+          .split("\n")
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        const list = document.getElementById("list");
+        list.innerHTML = "";
+        quotes.forEach(q => {
+          const li = document.createElement("li");
+          li.textContent = q;
+          list.appendChild(li);
+        });
+
+        const randomEl = document.getElementById("random");
+        document.getElementById("btn").onclick = () => {
+          const pick = quotes[Math.floor(Math.random() * quotes.length)];
+          randomEl.textContent = pick || "No quotes found yet.";
+        };
+      }
+
+      loadQuotes().catch(() => {
+        document.getElementById("random").textContent =
+          "Could not load quotes.txt (make sure it exists in the repo).";
+      });
+    </script>
+  </body>
+</html>
